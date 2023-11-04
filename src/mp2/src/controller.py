@@ -15,7 +15,11 @@ class vehicleController():
         self.controlPub = rospy.Publisher("/ackermann_cmd", AckermannDrive, queue_size = 1)
         self.prev_vel = 0
         self.L = 1.75 # Wheelbase, can be get from gem_control.py
-        self.log_acceleration = False
+        self.log_acceleration = True
+        self.acc_count = 0
+        self.x_log = []
+        self.y_log = []
+        self.acc_log = []
 
     def getModelState(self):
         # Get the current state of the vehicle
@@ -41,6 +45,13 @@ class vehicleController():
 
         ####################### TODO: Your TASK 1 code starts Here #######################
         pos_x, pos_y, vel, yaw = 0, 0, 0, 0
+        #print(currentPose)
+
+        pos_x = currentPose.pose.position.x
+        pos_y = currentPose.pose.position.y
+        vel =  np.linalg.norm([currentPose.twist.linear.x, currentPose.twist.linear.y, currentPose.twist.linear.z])
+        _,_, yaw = quaternion_to_euler(currentPose.pose.orientation.x, currentPose.pose.orientation.y, currentPose.pose.orientation.z, currentPose.pose.orientation.w)
+        # print(vel)
 
         ####################### TODO: Your Task 1 code ends Here #######################
 
@@ -48,13 +59,37 @@ class vehicleController():
 
     # Task 2: Longtitudal Controller
     # Based on all unreached waypoints, and your current vehicle state, decide your velocity
+    def curvature(self, x1, y1, x2, y2, x3, y3):
+        a = abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+        s1 = np.linalg.norm([ x1 - x2, y1- y2], 2)
+        s2 = np.linalg.norm([x2 - x3, y2 -y3 ],2)
+        s3 = np.linalg.norm([x1-x3, y1-y3],2)
+
+        # print(s1, s2, s3)
+        c = (4*a/(s1*s2*s3))*1000
+        print("curvature: ", c)
+        return c
     def longititudal_controller(self, curr_x, curr_y, curr_vel, curr_yaw, future_unreached_waypoints):
 
         ####################### TODO: Your TASK 2 code starts Here #######################
-        target_velocity = 10
 
+        if(len(future_unreached_waypoints) >= 3):
+            c = self.curvature(future_unreached_waypoints[0][0], future_unreached_waypoints[0][1], future_unreached_waypoints[1][0], future_unreached_waypoints[1][1], future_unreached_waypoints[2][0], future_unreached_waypoints[2][1])
+            if(c >20):
+                target_velocity = 10
+            elif(20> c> 5):
+                target_velocity = 14
+            else:
+                target_velocity = 18
+                if abs(target_velocity - curr_vel) > 10:
+                    target_velocity = 14
+                    if abs(target_velocity - curr_vel) > 9:
+                        target_velocity = 6
+        else:
+            target_velocity = 26
 
         ####################### TODO: Your TASK 2 code ends Here #######################
+        print('target velocity', target_velocity)
         return target_velocity
 
 
@@ -62,7 +97,24 @@ class vehicleController():
     def pure_pursuit_lateral_controller(self, curr_x, curr_y, curr_yaw, target_point, future_unreached_waypoints):
 
         ####################### TODO: Your TASK 3 code starts Here #######################
-        target_steering = 0
+        c = self.curvature(future_unreached_waypoints[0][0], future_unreached_waypoints[0][1], future_unreached_waypoints[1][0], future_unreached_waypoints[1][1], future_unreached_waypoints[2][0], future_unreached_waypoints[2][1])
+        if(c >20):
+            Lf = 7
+        elif(20> c> 5):
+            Lf = 12
+        else:
+            Lf = 15
+        max_steering_angle = 0.5
+
+        dx = target_point[0] - curr_x
+        dy = target_point[1] - curr_y
+
+        target_yaw = np.arctan2(dy, dx)
+
+        target_steering = np.arctan2(2*self.L*np.sin(target_yaw-curr_yaw), Lf)
+
+        target_steering = max(-max_steering_angle, min(target_steering, max_steering_angle))
+        print('target steering ', target_steering)
 
         ####################### TODO: Your TASK 3 code starts Here #######################
         return target_steering
@@ -78,15 +130,27 @@ class vehicleController():
         # Output: None
 
         curr_x, curr_y, curr_vel, curr_yaw = self.extract_vehicle_info(currentPose)
+        self.x_log.append(curr_x)
+        self.y_log.append(curr_y)
 
         # Acceleration Profile
         if self.log_acceleration:
+            print('current velocity ', curr_vel)
+            print('prev_vel ', self.prev_vel)
             acceleration = (curr_vel- self.prev_vel) * 100 # Since we are running in 100Hz
+            print('acceleration ', acceleration)
+            self.prev_vel = curr_vel
+            
+            if acceleration > 5:
+                self.acc_count += 1
+            print('acc_count ', self.acc_count)
+            self.acc_log.append(acceleration)
 
 
 
         target_velocity = self.longititudal_controller(curr_x, curr_y, curr_vel, curr_yaw, future_unreached_waypoints)
         target_steering = self.pure_pursuit_lateral_controller(curr_x, curr_y, curr_yaw, target_point, future_unreached_waypoints)
+
 
 
         #Pack computed velocity and steering angle into Ackermann command
@@ -100,4 +164,9 @@ class vehicleController():
     def stop(self):
         newAckermannCmd = AckermannDrive()
         newAckermannCmd.speed = 0
-        self.controlPub.publish(newAckermannCmd)
+        # plt.plot(self.x_log, self.y_log)
+        # plt.plot(np.arange(len(self.acc_log)), self.acc_log)
+        np.save('x_pos', self.x_log)
+        np.save('y_pos', self.y_log)
+        np.save('acc', self.acc_log)
+       
