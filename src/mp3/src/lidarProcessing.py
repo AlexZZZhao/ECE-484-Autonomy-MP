@@ -165,6 +165,40 @@ class LidarProcessing:
         ## TODO: Add 4 additional sensor directions #####
         # Handle sensor at 4 diagnal direction
         
+        filter_front_left = np.logical_and(y_points >= x_points - .1, y_points <= x_points + .1)
+        filter_front_left= np.logical_and(filter_front_left, x_points > 0)
+        filter_front_left= np.logical_and(filter_front_left, pixel_vals > 128)
+        indices = np.argwhere(filter_front_left).flatten()
+
+        self.x_front_left = np.mean(x_points[indices])
+        self.y_front_left = np.mean(y_points[indices])
+
+
+        filter_rear_right = np.logical_and(y_points >= x_points - .1, y_points <= x_points + .1)
+        filter_rear_right= np.logical_and(filter_rear_right, x_points < 0)
+        filter_rear_right= np.logical_and(filter_rear_right, pixel_vals > 128)
+        indices = np.argwhere(filter_rear_right).flatten()
+
+        self.x_rear_right= np.mean(x_points[indices])
+        self.y_rear_right = np.mean(y_points[indices])
+
+
+        filter_front_right = np.logical_and(y_points >= -x_points - .1, y_points <= -x_points + .1)
+        filter_front_right= np.logical_and(filter_front_right, y_points < 0)
+        filter_front_right= np.logical_and(filter_front_right, pixel_vals > 128)
+        indices = np.argwhere(filter_front_right).flatten()
+
+        self.x_front_right= np.mean(x_points[indices])
+        self.y_front_right = np.mean(y_points[indices])
+
+
+        filter_rear_left = np.logical_and(y_points >= -x_points - .1, y_points <= -x_points + .1)
+        filter_rear_left= np.logical_and(filter_rear_left, y_points > 0)
+        filter_rear_left= np.logical_and(filter_rear_left, pixel_vals > 128)
+        indices = np.argwhere(filter_rear_left).flatten()
+
+        self.x_rear_left= np.mean(x_points[indices])
+        self.y_rear_left = np.mean(y_points[indices])
         
         ###############
 

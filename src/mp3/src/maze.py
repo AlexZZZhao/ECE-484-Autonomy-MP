@@ -250,6 +250,47 @@ class Maze(object):
             d4 += 1
 
         ## TODO: Add 4 additional sensor directions #####
+        #front left
+        pos_x = x
+        pos_y = y
+        d5 = 0
+        dx = np.cos(orientation+np.pi/4) * 1 - np.sin(orientation+np.pi/4) * 0
+        dy = np.sin(orientation+np.pi/4) * 1 + np.cos(orientation+np.pi/4) * 0
+        while not self.colide_wall(int(round(pos_y)),int(round(pos_x))) and d5 < sensor_limit:
+            pos_x = pos_x + dx
+            pos_y = pos_y + dy
+            d5 += 1
+        #front right
+        pos_x = x
+        pos_y = y
+        d6 = 0
+        dx = np.cos(orientation-np.pi/4) * 1 - np.sin(orientation-np.pi/4) * 0
+        dy = np.sin(orientation-np.pi/4) * 1 + np.cos(orientation-np.pi/4) * 0
+        while not self.colide_wall(int(round(pos_y)),int(round(pos_x))) and d6 < sensor_limit:
+            pos_x = pos_x + dx
+            pos_y = pos_y + dy
+            d6 += 1
+        #rear left
+        pos_x = x
+        pos_y = y
+        d7 = 0
+        dx = np.cos(orientation+3*np.pi/4) * 1 - np.sin(orientation+3*np.pi/4) * 0
+        dy = np.sin(orientation+3*np.pi/4) * 1 + np.cos(orientation+3*np.pi/4) * 0
+        while not self.colide_wall(int(round(pos_y)),int(round(pos_x))) and d7 < sensor_limit:
+            pos_x = pos_x + dx
+            pos_y = pos_y + dy
+            d7 += 1
+        #rear right
+        pos_x = x
+        pos_y = y
+        d8 = 0
+        dx = np.cos(orientation-3*np.pi/4) * 1 - np.sin(orientation-3*np.pi/4) * 0
+        dy = np.sin(orientation-3*np.pi/4) * 1 + np.cos(orientation-3*np.pi/4) * 0
+        while not self.colide_wall(int(round(pos_y)),int(round(pos_x))) and d8 < sensor_limit:
+            pos_x = pos_x + dx
+            pos_y = pos_y + dy
+            d8 += 1
+        
 
 
         ###############
@@ -276,7 +317,7 @@ class Particle(object):
         self.heading = heading  # Orientation of particles
         self.weight = weight    # Weight of particle
         self.maze = maze        # The map of the maze
-        self.sensor_limit = sensor_limit    # The sensing limit of sensor
+        self.sensor_limit = sensor_limit    # The sensi                self.particles[i].y = self.bob.y
 
         # Add random noise to the particle at initialization
         if noisy:
